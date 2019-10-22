@@ -1,0 +1,36 @@
+commit 6868951183e8c450dff0ac4ac25733f0b8cbc8a2
+Author: Todd Lipcon <todd@cloudera.com>
+Date:   Wed Jun 26 22:42:51 2019 -0700
+
+    Fix memory leak of ECDH key
+    
+    We were creating an EC_KEY for initializing ECDH without freeing it.
+    This caused kudu's LSAN tests to fail when trying to upgrade its version
+    of squeasel.
+    
+    With this patch, kudu's webserver-test passes with ASAN/LSAN enabled.
+    
+    Change-Id: If6e7a451570dbcda2991d90251073ac0304d97f9
+
+diff --git a/squeasel.c b/squeasel.c
+index 86fb054..b301f5c 100644
+--- a/squeasel.c
++++ b/squeasel.c
+@@ -4336,11 +4336,12 @@ static int set_ssl_option(struct sq_context *ctx) {
+     EC_KEY* ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+     if (ecdh == NULL) {
+       cry(fc(ctx), "EC_KEY_new_by_curve_name: %s", ssl_error());
+-    }
+-
+-    int rc = SSL_CTX_set_tmp_ecdh(ctx->ssl_ctx, ecdh);
+-    if (rc <= 0) {
+-      cry(fc(ctx), "SSL_CTX_set_tmp_ecdh: %s", ssl_error());
++    } else {
++      int rc = SSL_CTX_set_tmp_ecdh(ctx->ssl_ctx, ecdh);
++      if (rc <= 0) {
++        cry(fc(ctx), "SSL_CTX_set_tmp_ecdh: %s", ssl_error());
++      }
++      EC_KEY_free(ecdh);
+     }
+ #elif OPENSSL_VERSION_NUMBER < 0x10100000L
+     // OpenSSL 1.0.2 provides the set_ecdh_auto API which internally figures out

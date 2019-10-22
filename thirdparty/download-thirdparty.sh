@@ -265,11 +265,14 @@ fetch_and_patch \
  $RAPIDJSON_PATCHLEVEL \
  "patch -p1 < $TP_DIR/patches/rapidjson-fix-signed-unsigned-conversion-error.patch"
 
-SQUEASEL_PATCHLEVEL=0
+SQUEASEL_PATCHLEVEL=3
 fetch_and_patch \
  squeasel-${SQUEASEL_VERSION}.tar.gz \
  $SQUEASEL_SOURCE \
- $SQUEASEL_PATCHLEVEL
+ $SQUEASEL_PATCHLEVEL \
+ "patch -p1 < $TP_DIR/patches/squeasel-add-ecdh-ciphers.patch" \
+ "patch -p1 < $TP_DIR/patches/squeasel-openssl-version-checks.patch" \
+ "patch -p1 < $TP_DIR/patches/squeasel-ecdh-key-memleak-fix.patch"
 
 MUSTACHE_PATCHLEVEL=0
 fetch_and_patch \
